@@ -36,6 +36,15 @@ jobs:
         env:
           AUDIO_URL: ${{ github.event.inputs.audio_url }}
 
+      - name: Check if output exists
+        run: |
+          if [ -f /tmp/output.json ]; then
+            echo "Output file exists, proceeding with upload."
+          else
+            echo "Output file not found!"
+            exit 1
+          fi
+
       - name: Upload output artifact
         uses: actions/upload-artifact@v3
         with:
