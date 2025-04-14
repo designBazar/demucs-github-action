@@ -1,31 +1,43 @@
-name: Demucs Audio Separation
+name: Run Demucs
 
 on:
   workflow_dispatch:
     inputs:
       audio_url:
-        description: 'Direct link to MP3 file'
+        description: 'URL of the audio to process'
         required: true
 
 jobs:
-  separate:
+  run_demucs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Set up Python
+      - name: Set up Python 3.12.10
         uses: actions/setup-python@v4
         with:
-          python-version: 3.9
+          python-version: 3.12.10
 
       - name: Install dependencies
         run: |
-          pip install --upgrade pip
+          python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run Demucs
-        run: python run_demucs.py
+      - name: Install ffmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+
+      - name: Download and process audio
+        run: |
+          python run_demucs.py
         env:
           AUDIO_URL: ${{ github.event.inputs.audio_url }}
+
+      - name: Upload output artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: demucs-output
+          path: /tmp/output.json
