@@ -30,9 +30,3 @@ jobs:
           python run_demucs.py
         env:
           AUDIO_URL: ${{ github.event.inputs.audio_url }}
-
-      - name: Upload output artifact
-        uses: actions/upload-artifact@v3.1.3  # explicitly set the version
-        with:
-          name: demucs-output
-          path: /tmp/output.json
