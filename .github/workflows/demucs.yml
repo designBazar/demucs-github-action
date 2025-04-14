@@ -28,7 +28,7 @@ jobs:
           AUDIO_URL: ${{ github.event.inputs.audio_url }}
 
       - name: Upload results
-        uses: actions/upload-artifact@v2  # Use v2 instead of v3
+        uses: actions/upload-artifact@v2 # This should still work
         with:
           name: demucs_output
           path: output.json
