@@ -1,47 +1,46 @@
 import os
-import librosa
+import requests
+import base64
+import tempfile
 from demucs.apply import apply_model
 from demucs.pretrained import get_model
-import tempfile
-import json
-import requests
+from demucs.audio import AudioFile
+from torchaudio import save
 
-# Use librosa to load the audio file
-def download_audio(audio_url, output_path):
-    # Download the MP3 file directly using requests
-    response = requests.get(audio_url)
-    with open(output_path, 'wb') as f:
+def download_audio(url, path):
+    print(f"Downloading from {url}")
+    response = requests.get(url)
+    response.raise_for_status()
+    with open(path, "wb") as f:
         f.write(response.content)
 
-def main():
-    # Get the audio URL from the environment variable
-    audio_url = os.getenv("AUDIO_URL")
-    if not audio_url:
-        print("No audio URL provided.")
-        exit(1)
+def encode_base64(path):
+    with open(path, "rb") as f:
+        return base64.b64encode(f.read()).decode()
 
-    # Temporary directory to store audio and output
+def run():
+    url = os.getenv("AUDIO_URL")
+    if not url:
+        raise Exception("Missing AUDIO_URL")
+
     with tempfile.TemporaryDirectory() as tmp:
-        input_audio_path = os.path.join(tmp, "input.mp3")
-        download_audio(audio_url, input_audio_path)
+        input_path = os.path.join(tmp, "audio.mp3")
+        out_dir = os.path.join(tmp, "stems")
+        os.makedirs(out_dir, exist_ok=True)
 
-        # Load the audio file using librosa
-        wav, sr = librosa.load(input_audio_path, sr=None)
+        download_audio(url, input_path)
 
-        # Load the Demucs model
-        model = get_model(name="htdemucs").cpu()
-        sources = apply_model(model, wav.unsqueeze(0), split=True, shifts=1, device="cpu")[0]
+        print("Running Demucs...")
+        model = get_model(name="htdemucs")
+        wav = AudioFile(input_path).read(streams=0, channels=1)[0]
+        out = apply_model(model, wav[None])[0]
 
-        # Save each separated stem (audio source) as a separate file
-        stems = {}
-        for name, tensor in zip(model.sources, sources):
-            out_path = os.path.join(tmp, f"{name}.wav")
-            torchaudio.save(out_path, tensor.cpu(), sr)
-            stems[name] = out_path
-
-        # Output results as JSON (base64 could be added here if necessary)
-        with open("/tmp/output.json", "w") as f:
-            json.dump(stems, f)
+        for name, source in zip(model.sources, out):
+            out_path = os.path.join(out_dir, f"{name}.mp3")
+            save(out_path, source.unsqueeze(0), 44100, format="mp3")
+            print(f"--- {name.upper()} BASE64 START ---")
+            print(encode_base64(out_path))
+            print(f"--- {name.upper()} BASE64 END ---")
 
 if __name__ == "__main__":
-    main()
+    run()
