@@ -1,0 +1,34 @@
+name: Demucs Separator
+
+on:
+  workflow_dispatch:
+    inputs:
+      base64_audio:
+        description: 'Base64 encoded audio'
+        required: true
+
+jobs:
+  separate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run Demucs separation
+        run: python run_demucs.py
+        env:
+          INPUT_BASE64: ${{ github.event.inputs.base64_audio }}
+
+      - name: Upload results
+        uses: actions/upload-artifact@v3
+        with:
+          name: demucs_output
+          path: output.json
