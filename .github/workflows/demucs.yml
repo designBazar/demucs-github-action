@@ -1,11 +1,16 @@
-name: Process MP3 and Return Base64
+name: Run Demucs
 
 on:
-  workflow_dispatch:  # This will allow the workflow to be triggered manually via the API
+  workflow_dispatch:
+    inputs:
+      audio_url:
+        description: 'URL of the audio to process'
+        required: true
 
 jobs:
   run_demucs:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -21,18 +26,16 @@ jobs:
           pip install -r requirements.txt
 
       - name: Download and process audio
-        env:
-          AUDIO_URL: ${{ github.event.inputs.audio_url }}
         run: |
           python run_demucs.py
+        env:
+          AUDIO_URL: ${{ github.event.inputs.audio_url }}
 
-      - name: Encode processed audio to Base64
+      - name: Base64 encode the output audio
         run: |
-          python encode_to_base64.py
+          python encode_to_base64.py /tmp/output_audio.wav
+        id: encode_audio
 
-      - name: Return Base64 Data
-        id: return_base64
+      - name: Return the base64 encoded audio
         run: |
-          cat /tmp/processed_audio_base64.txt
-        outputs:
-          base64_audio: ${{ steps.return_base64.outputs.result }}
+          echo "Base64 encoded audio: ${{ steps.encode_audio.outputs.base64_audio }}"
