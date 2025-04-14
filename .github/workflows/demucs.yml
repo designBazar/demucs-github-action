@@ -15,10 +15,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Set up Python 3.10.0  # Use a supported version of Python
+      - name: Set up Python 3.14.0  # Use a supported version of Python
         uses: actions/setup-python@v4
         with:
-          python-version: 3.10.0 # Updated Python version
+          python-version: 3.14.0 # Updated Python version
 
       - name: Install dependencies
         run: |
