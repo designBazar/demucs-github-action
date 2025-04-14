@@ -1,15 +1,16 @@
-name: Demucs Separator
+name: Demucs from Link (YouTube or MP3)
 
 on:
   workflow_dispatch:
     inputs:
-      base64_audio:
-        description: 'Base64 encoded audio'
+      audio_link:
+        description: 'YouTube URL or direct MP3 URL'
         required: true
 
 jobs:
   separate:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repo
         uses: actions/checkout@v3
@@ -19,16 +20,26 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: Install dependencies
-        run: pip install -r requirements.txt
+      - name: Install yt-dlp and dependencies
+        run: |
+          pip install yt-dlp
+          pip install -r requirements.txt
+
+      - name: Download audio file
+        run: |
+          if [[ "${{ github.event.inputs.audio_link }}" == *"youtube.com"* ]] || [[ "${{ github.event.inputs.audio_link }}" == *"youtu.be"* ]]; then
+            echo "Downloading from YouTube..."
+            yt-dlp -x --audio-format mp3 -o "input.%(ext)s" "${{ github.event.inputs.audio_link }}"
+          else
+            echo "Downloading direct MP3..."
+            curl -L "${{ github.event.inputs.audio_link }}" -o input.mp3
+          fi
 
       - name: Run Demucs separation
-        run: python run_demucs.py
-        env:
-          INPUT_BASE64: ${{ github.event.inputs.base64_audio }}
+        run: python run_demucs.py input.mp3
 
       - name: Upload results
         uses: actions/upload-artifact@v3
         with:
           name: demucs_output
-          path: output.json
+          path: separated_output/
