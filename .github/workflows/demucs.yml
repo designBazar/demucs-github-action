@@ -24,7 +24,7 @@ jobs:
 
       - name: Download and process audio
         env:
-          AUDIO_URL: 'https://raw.githubusercontent.com/designBazar/designBazar.github.io/main/CHAND_MAMA_%E0%A6%9A%E0%A6%BE%E0%A6%81%E0%A6%A6_%E0%A6%AE%E0%A6%BE%E0%A6%AE%E0%A6%BE_%EF%BD%9C_VIDEO_SONG_%EF%BD%9C_BORBAAD_%EF%BD%9C_SHAKIB_KHAN_%EF%BD%9CNUSRAT.mp3'  # Replace with the actual MP3 URL
+          AUDIO_URL: 'https://raw.githubusercontent.com/designBazar/designBazar.github.io/main/CHAND_MAMA_%E0%A6%9A%E0%A6%BE%E0%A6%81%E0%A6%A6_%E0%A6%AE%E0%A6%BE%E0%A6%AE%E0%A6%BE_%EF%BD%9C_VIDEO_SONG_%EF%BD%9C_BORBAAD_%EF%BD%9C_SHAKIB_KHAN_%EF%BD%9CNUSRAT.mp3'
         run: |
           python run_demucs.py
 
@@ -32,4 +32,4 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: demucs-output
-          path: /tmp/output.json
+          path: output/  # This directory now contains the output files
