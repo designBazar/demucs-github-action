@@ -1,0 +1,3 @@
+torch
+torchaudio
+demucs==4.0.1
