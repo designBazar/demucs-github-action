@@ -1,5 +1,2 @@
-torch
-torchaudio
-librosa
-demucs==4.0.1
+demucs
 requests
