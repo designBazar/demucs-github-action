@@ -1,9 +1,7 @@
-name: Run Demucs
+name: Process MP3 and Return Base64
 
 on:
-  push:
-    branches:
-      - main
+  workflow_dispatch:  # This will allow the workflow to be triggered manually via the API
 
 jobs:
   run_demucs:
@@ -24,12 +22,17 @@ jobs:
 
       - name: Download and process audio
         env:
-          AUDIO_URL: 'https://raw.githubusercontent.com/designBazar/designBazar.github.io/main/CHAND_MAMA_%E0%A6%9A%E0%A6%BE%E0%A6%81%E0%A6%A6_%E0%A6%AE%E0%A6%BE%E0%A6%AE%E0%A6%BE_%EF%BD%9C_VIDEO_SONG_%EF%BD%9C_BORBAAD_%EF%BD%9C_SHAKIB_KHAN_%EF%BD%9CNUSRAT.mp3'
+          AUDIO_URL: ${{ github.event.inputs.audio_url }}
         run: |
           python run_demucs.py
 
-      - name: Upload output
-        uses: actions/upload-artifact@v3
-        with:
-          name: demucs-output
-          path: output/  # This directory now contains the output files
+      - name: Encode processed audio to Base64
+        run: |
+          python encode_to_base64.py
+
+      - name: Return Base64 Data
+        id: return_base64
+        run: |
+          cat /tmp/processed_audio_base64.txt
+        outputs:
+          base64_audio: ${{ steps.return_base64.outputs.result }}
