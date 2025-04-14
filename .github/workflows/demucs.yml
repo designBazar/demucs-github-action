@@ -20,10 +20,10 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: Install yt-dlp and dependencies
+      - name: Install Python packages
         run: |
-          pip install yt-dlp
-          pip install -r requirements.txt
+          pip install torch torchaudio --index-url https://download.pytorch.org/whl/cpu
+          pip install demucs==4.0.1 yt-dlp
 
       - name: Download audio file
         run: |
@@ -36,10 +36,10 @@ jobs:
           fi
 
       - name: Run Demucs separation
-        run: python run_demucs.py input.mp3
+        run: demucs input.mp3
 
       - name: Upload results
         uses: actions/upload-artifact@v3
         with:
           name: demucs_output
-          path: separated_output/
+          path: separated/*
