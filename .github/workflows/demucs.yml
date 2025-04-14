@@ -15,10 +15,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Set up Python 3.12.10  # Use a supported version of Python
+      - name: Set up Python 3.12.10
         uses: actions/setup-python@v4
         with:
-          python-version: 3.12.10 # Updated Python version
+          python-version: 3.12.10
 
       - name: Install dependencies
         run: |
@@ -31,11 +31,8 @@ jobs:
         env:
           AUDIO_URL: ${{ github.event.inputs.audio_url }}
 
-      - name: Base64 encode the output audio
-        run: |
-          python encode_to_base64.py /tmp/output_audio.wav
-        id: encode_audio
-
-      - name: Return the base64 encoded audio
-        run: |
-          echo "Base64 encoded audio: ${{ steps.encode_audio.outputs.base64_audio }}"
+      - name: Upload output artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: demucs-output
+          path: /tmp/output.json
