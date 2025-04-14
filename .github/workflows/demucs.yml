@@ -1,10 +1,10 @@
-name: Demucs from Link (YouTube or MP3)
+name: Demucs Separator
 
 on:
   workflow_dispatch:
     inputs:
-      audio_link:
-        description: 'YouTube URL or direct MP3 URL'
+      audio_url:
+        description: 'Audio URL (YouTube or direct MP3)'
         required: true
 
 jobs:
@@ -20,26 +20,17 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: Install Python packages
+      - name: Install dependencies
         run: |
-          pip install torch torchaudio --index-url https://download.pytorch.org/whl/cpu
-          pip install demucs==4.0.1 yt-dlp
-
-      - name: Download audio file
-        run: |
-          if [[ "${{ github.event.inputs.audio_link }}" == *"youtube.com"* ]] || [[ "${{ github.event.inputs.audio_link }}" == *"youtu.be"* ]]; then
-            echo "Downloading from YouTube..."
-            yt-dlp -x --audio-format mp3 -o "input.%(ext)s" "${{ github.event.inputs.audio_link }}"
-          else
-            echo "Downloading direct MP3..."
-            curl -L "${{ github.event.inputs.audio_link }}" -o input.mp3
-          fi
+          pip install torch torchaudio demucs==4.0.1 yt-dlp
 
       - name: Run Demucs separation
-        run: demucs input.mp3
+        run: python run_demucs.py
+        env:
+          AUDIO_URL: ${{ github.event.inputs.audio_url }}
 
       - name: Upload results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: demucs_output
-          path: separated/*
+          path: output.json
