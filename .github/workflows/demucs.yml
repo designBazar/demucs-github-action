@@ -4,13 +4,12 @@ on:
   workflow_dispatch:
     inputs:
       audio_url:
-        description: 'Audio URL (YouTube or direct MP3)'
+        description: 'URL to the MP3 file'
         required: true
 
 jobs:
   separate:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repo
         uses: actions/checkout@v3
@@ -21,8 +20,7 @@ jobs:
           python-version: '3.10'
 
       - name: Install dependencies
-        run: |
-          pip install torch torchaudio demucs==4.0.1 yt-dlp
+        run: pip install -r requirements.txt
 
       - name: Run Demucs separation
         run: python run_demucs.py
@@ -30,7 +28,7 @@ jobs:
           AUDIO_URL: ${{ github.event.inputs.audio_url }}
 
       - name: Upload results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v3
         with:
           name: demucs_output
           path: output.json
