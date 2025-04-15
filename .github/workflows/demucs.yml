@@ -35,9 +35,9 @@ jobs:
     - name: Run Spleeter
       id: spleeter
       run: |
-        if [ -f input_audio/input.mp3 ]; then
+        if [ -f "input_audio/input.mp3" ]; then
           echo "Running Spleeter separation..."
-          spleeter separate -i input_audio/input.mp3 -o output
+          spleeter separate -i "input_audio/input.mp3" -o output
           ls -lh output/
           ls -lh output/input/
         else
