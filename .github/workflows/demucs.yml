@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       base64_json: ${{ steps.encode.outputs.base64_json }}
-      artifact_url: ${{ steps.upload_artifact.outputs.artifact_url }}
+      artifact_url: ${{ env.artifact_url }}
 
     steps:
     - name: Set up Python
@@ -22,6 +22,7 @@ jobs:
 
     - name: Install dependencies
       run: |
+        sudo apt-get update
         sudo apt-get install -y ffmpeg
         pip install spleeter
 
@@ -37,23 +38,24 @@ jobs:
     - name: Convert to Base64 and create JSON
       id: encode
       run: |
-        # Base64 encode vocals and accompaniment
         vocals_base64=$(base64 -w 0 "output/input/vocals.wav")
         accompaniment_base64=$(base64 -w 0 "output/input/accompaniment.wav")
         
-        # Check if file is large and create separate files or parts
         if [ ${#vocals_base64} -gt 1000000 ]; then
-          echo "Base64 data too large, saving as artifact instead."
-          echo $vocals_base64 > vocals_base64.txt
-          echo $accompaniment_base64 > accompaniment_base64.txt
+          echo "Base64 data too large, saving as artifact."
+          echo "$vocals_base64" > vocals_base64.txt
+          echo "$accompaniment_base64" > accompaniment_base64.txt
         else
           json="{\"vocals\":\"$vocals_base64\",\"accompaniment\":\"$accompaniment_base64\"}"
           echo "base64_json=$json" >> $GITHUB_OUTPUT
         fi
 
+    - name: Debug Base64 JSON Output
+      run: echo "Base64 JSON: ${{ steps.encode.outputs.base64_json }}"
+
     - name: Upload Base64 as Artifact (if large)
       if: steps.encode.outputs.base64_json == ''
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: base64_audio_files
         path: |
@@ -61,5 +63,5 @@ jobs:
           accompaniment_base64.txt
 
     - name: Set artifact URL
-      id: upload_artifact
-      run: echo "artifact_url=$(echo ${{ steps.upload-artifact.outputs.artifact_url }})" >> $GITHUB_ENV
+      if: steps.encode.outputs.base64_json == ''
+      run: echo "artifact_url=https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts" >> $GITHUB_ENV
