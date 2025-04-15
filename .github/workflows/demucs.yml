@@ -12,11 +12,10 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       base64_json: ${{ steps.encode.outputs.base64_json }}
-      artifact_url: ${{ env.artifact_url }}
 
     steps:
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: '3.9'
 
@@ -24,34 +23,39 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install -y ffmpeg
-        pip install spleeter
+        pip install spleeter==2.4.0
 
     - name: Download audio
       run: |
         mkdir input_audio
         wget "${{ github.event.inputs.audio_url }}" -O input_audio/input.mp3
+        ls -lh input_audio/
 
     - name: Run Spleeter
+      id: spleeter
       run: |
         spleeter separate -i input_audio/input.mp3 -o output
+        ls -lh output/input/
 
     - name: Convert to Base64 and create JSON
       id: encode
       run: |
-        vocals_base64=$(base64 -w 0 "output/input/vocals.wav")
-        accompaniment_base64=$(base64 -w 0 "output/input/accompaniment.wav")
-        
-        if [ ${#vocals_base64} -gt 1000000 ]; then
-          echo "Base64 data too large, saving as artifact."
-          echo "$vocals_base64" > vocals_base64.txt
-          echo "$accompaniment_base64" > accompaniment_base64.txt
+        if [ -f "output/input/vocals.wav" ] && [ -f "output/input/accompaniment.wav" ]; then
+          vocals_base64=$(base64 -w 0 "output/input/vocals.wav")
+          accompaniment_base64=$(base64 -w 0 "output/input/accompaniment.wav")
+          echo "Vocals Base64 length: ${#vocals_base64}"
+          if [ ${#vocals_base64} -gt 1000000 ]; then
+            echo "Base64 data too large, saving as artifact."
+            echo "$vocals_base64" > vocals_base64.txt
+            echo "$accompaniment_base64" > accompaniment_base64.txt
+          else
+            json="{\"vocals\":\"$vocals_base64\",\"accompaniment\":\"$accompaniment_base64\"}"
+            echo "base64_json=$json" >> $GITHUB_OUTPUT
+          fi
         else
-          json="{\"vocals\":\"$vocals_base64\",\"accompaniment\":\"$accompaniment_base64\"}"
-          echo "base64_json=$json" >> $GITHUB_OUTPUT
+          echo "Error: Output files missing"
+          exit 1
         fi
-
-    - name: Debug Base64 JSON Output
-      run: echo "Base64 JSON: ${{ steps.encode.outputs.base64_json }}"
 
     - name: Upload Base64 as Artifact (if large)
       if: steps.encode.outputs.base64_json == ''
@@ -61,7 +65,3 @@ jobs:
         path: |
           vocals_base64.txt
           accompaniment_base64.txt
-
-    - name: Set artifact URL
-      if: steps.encode.outputs.base64_json == ''
-      run: echo "artifact_url=https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts" >> $GITHUB_ENV
