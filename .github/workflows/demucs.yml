@@ -36,7 +36,9 @@ jobs:
       id: spleeter
       run: |
         if [ -f input_audio/input.mp3 ]; then
+          echo "Running Spleeter separation..."
           spleeter separate -i input_audio/input.mp3 -o output
+          ls -lh output/
           ls -lh output/input/
         else
           echo "Error: input_audio/input.mp3 does not exist"
@@ -50,6 +52,7 @@ jobs:
           vocals_base64=$(base64 -w 0 "output/input/vocals.wav")
           accompaniment_base64=$(base64 -w 0 "output/input/accompaniment.wav")
           echo "Vocals Base64 length: ${#vocals_base64}"
+          
           if [ ${#vocals_base64} -gt 1000000 ]; then
             echo "Base64 data too large, saving as artifact."
             echo "$vocals_base64" > vocals_base64.txt
