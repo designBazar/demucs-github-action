@@ -28,20 +28,21 @@ jobs:
     - name: Download audio
       run: |
         mkdir -p input_audio
-        wget "${{ github.event.inputs.audio_url }}" -O input_audio/input.mp3 || { echo "Error: Failed to download audio file"; exit 1; }
-        ls -lh input_audio/
-        file input_audio/input.mp3
+        wget "${{ github.event.inputs.audio_url }}" -O input_audio/input.mp3
+        cp input_audio/input.mp3 ./input.mp3
+        ls -lh
+        file input.mp3
 
     - name: Run Spleeter
       id: spleeter
       run: |
-        if [ -f "input_audio/input.mp3" ]; then
+        if [ -f "input.mp3" ]; then
           echo "Running Spleeter separation..."
-          spleeter separate -i "input_audio/input.mp3" -o output
+          spleeter separate -i "input.mp3" -o output
           ls -lh output/
           ls -lh output/input/
         else
-          echo "Error: input_audio/input.mp3 does not exist"
+          echo "Error: input.mp3 does not exist"
           exit 1
         fi
 
