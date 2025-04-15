@@ -1,52 +1,65 @@
-name: Run Demucs
+name: Spleeter Base64 API
 
 on:
   workflow_dispatch:
     inputs:
       audio_url:
-        description: 'URL of the audio to process'
+        description: 'MP3 URL'
         required: true
 
 jobs:
-  run_demucs:
+  spleeter_job:
     runs-on: ubuntu-latest
+    outputs:
+      base64_json: ${{ steps.encode.outputs.base64_json }}
+      artifact_url: ${{ steps.upload_artifact.outputs.artifact_url }}
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
 
-      - name: Set up Python 3.12.10
-        uses: actions/setup-python@v4
-        with:
-          python-version: 3.12.10
+    - name: Install dependencies
+      run: |
+        sudo apt-get install -y ffmpeg
+        pip install spleeter
 
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
+    - name: Download audio
+      run: |
+        mkdir input_audio
+        wget "${{ github.event.inputs.audio_url }}" -O input_audio/input.mp3
 
-      - name: Install ffmpeg and ffprobe
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y ffmpeg
+    - name: Run Spleeter
+      run: |
+        spleeter separate -i input_audio/input.mp3 -o output
 
-      - name: Download and process audio
-        run: |
-          python run_demucs.py
-        env:
-          AUDIO_URL: ${{ github.event.inputs.audio_url }}
+    - name: Convert to Base64 and create JSON
+      id: encode
+      run: |
+        # Base64 encode vocals and accompaniment
+        vocals_base64=$(base64 -w 0 "output/input/vocals.wav")
+        accompaniment_base64=$(base64 -w 0 "output/input/accompaniment.wav")
+        
+        # Check if file is large and create separate files or parts
+        if [ ${#vocals_base64} -gt 1000000 ]; then
+          echo "Base64 data too large, saving as artifact instead."
+          echo $vocals_base64 > vocals_base64.txt
+          echo $accompaniment_base64 > accompaniment_base64.txt
+        else
+          json="{\"vocals\":\"$vocals_base64\",\"accompaniment\":\"$accompaniment_base64\"}"
+          echo "base64_json=$json" >> $GITHUB_OUTPUT
+        fi
 
-      - name: Check if output exists
-        run: |
-          if [ -f /tmp/output.json ]; then
-            echo "Output file exists, proceeding with upload."
-          else
-            echo "Output file not found!"
-            exit 1
-          fi
+    - name: Upload Base64 as Artifact (if large)
+      if: steps.encode.outputs.base64_json == ''
+      uses: actions/upload-artifact@v3
+      with:
+        name: base64_audio_files
+        path: |
+          vocals_base64.txt
+          accompaniment_base64.txt
 
-      - name: Upload output artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: demucs-output
-          path: /tmp/output.json
+    - name: Set artifact URL
+      id: upload_artifact
+      run: echo "artifact_url=$(echo ${{ steps.upload-artifact.outputs.artifact_url }})" >> $GITHUB_ENV
