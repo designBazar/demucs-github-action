@@ -27,15 +27,21 @@ jobs:
 
     - name: Download audio
       run: |
-        mkdir input_audio
-        wget "${{ github.event.inputs.audio_url }}" -O input_audio/input.mp3
+        mkdir -p input_audio
+        wget "${{ github.event.inputs.audio_url }}" -O input_audio/input.mp3 || { echo "Error: Failed to download audio file"; exit 1; }
         ls -lh input_audio/
+        file input_audio/input.mp3
 
     - name: Run Spleeter
       id: spleeter
       run: |
-        spleeter separate -i input_audio/input.mp3 -o output
-        ls -lh output/input/
+        if [ -f input_audio/input.mp3 ]; then
+          spleeter separate -i input_audio/input.mp3 -o output
+          ls -lh output/input/
+        else
+          echo "Error: input_audio/input.mp3 does not exist"
+          exit 1
+        fi
 
     - name: Convert to Base64 and create JSON
       id: encode
